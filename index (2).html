@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Best Builder</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #0b0d12; --card-bg: #141824; --accent-color: #00ffcc;
+            --danger-color: #ff3b30; --text-color: #e2e8f0; --gold-color: #f59e0b; --vs-color: #a855f7;
+        }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        .pantalla-menu { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 80vh; text-align: center; animation: fadeIn 0.5s ease; width: 100%; max-width: 800px; }
+        .pantalla-menu h1 { font-size: 3.5rem; color: var(--accent-color); margin-bottom: 10px; text-shadow: 0 0 20px rgba(0, 255, 204, 0.4); }
+        .pantalla-menu p { font-size: 1.2rem; color: #94a3b8; margin-bottom: 40px; }
+        .botones-menu { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+        .btn-menu { padding: 20px 40px; font-size: 1.5rem; font-weight: bold; border: 2px solid transparent; border-radius: 12px; cursor: pointer; transition: all 0.3s ease; background: #1e2436; color: white; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+        .btn-menu.solo:hover { background: var(--accent-color); color: black; transform: translateY(-5px); }
+        .btn-menu.online:hover { background: var(--vs-color); color: white; transform: translateY(-5px); }
+        
+        /* Estilos Panel P2P */
+        .panel-p2p { background: #1e2436; border: 2px solid #2a324a; border-radius: 12px; padding: 30px; width: 100%; margin-bottom: 20px; box-sizing: border-box; }
+        .panel-p2p h3 { margin-top: 0; color: #94a3b8; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
+        .codigo-sala { font-size: 2rem; color: var(--accent-color); font-family: monospace; letter-spacing: 3px; font-weight: bold; background: #0b0d12; padding: 10px; border-radius: 8px; user-select: all; }
+        .input-amigo { width: 80%; padding: 15px; font-size: 1.2rem; border-radius: 8px; border: 2px solid #2a324a; background: #0b0d12; color: white; outline: none; text-align: center; margin-bottom: 15px; }
+        .input-amigo:focus { border-color: var(--vs-color); }
+        
+        #pantalla-juego { display: none; width: 100%; flex-direction: column; align-items: center; animation: fadeIn 0.5s ease; }
+        header { text-align: center; margin-bottom: 20px; border-bottom: 3px solid var(--accent-color); padding-bottom: 15px; width: 100%; max-width: 1100px; }
+        .modo-badge { background: var(--vs-color); color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; display: inline-block; margin-bottom: 10px; }
+        .hud { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; width: 100%; max-width: 1100px; background: var(--card-bg); padding: 25px; border-radius: 12px; margin-bottom: 20px; box-sizing: border-box; }
+        .hud-item { font-size: 1.1rem; line-height: 1.4; } .destacado { color: var(--accent-color); font-weight: bold; font-size: 1.3rem; }
+        .contenedor-piezas { width: 100%; max-width: 1100px; }
+        .tabs-categorias { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+        .tab-cat { display: flex; align-items: center; gap: 8px; padding: 10px 18px; font-size: 0.9rem; font-weight: bold; border: 2px solid #2a324a; border-radius: 30px; background: #1e2436; color: #94a3b8; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .tab-cat:hover { border-color: var(--accent-color); color: var(--accent-color); }
+        .tab-cat.activa { background: var(--accent-color); border-color: var(--accent-color); color: #000; }
+        .tab-cat .check-icon { display: none; }
+        .tab-cat.completada .check-icon { display: inline; }
+        .tab-cat.completada { border-color: #1d9e75; color: #1d9e75; }
+        .tab-cat.completada.activa { background: var(--accent-color); border-color: var(--accent-color); color: #000; }
+        .panel-categoria { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 10px; }
+        .panel-categoria h3 { margin: 0 0 16px; color: #00ffcc; border-bottom: 2px solid #252b45; padding-bottom: 8px; font-size: 1.2rem; }
+        .lista-piezas { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; max-height: 420px; overflow-y: auto; padding-right: 4px; }
+        .lista-piezas::-webkit-scrollbar { width: 6px; }
+        .lista-piezas::-webkit-scrollbar-track { background: #1a2035; border-radius: 4px; }
+        .lista-piezas::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 4px; }
+        .tarjeta-pieza { background: #1e2436; border: 2px solid transparent; padding: 14px 16px; border-radius: 8px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 4px; }
+        .tarjeta-pieza:hover { background: #2a324a; border-color: #3a4560; }
+        .tarjeta-pieza.seleccionada { border-color: var(--accent-color); background: #0f3d32; }
+        .detalles-pieza { font-size: 0.82rem; color: #94a3b8; margin-top: 4px; }
+        .controles { display: flex; gap: 20px; margin: 30px 0; }
+        .btn { color: #000; border: none; padding: 18px 45px; font-size: 1.2rem; font-weight: bold; border-radius: 40px; cursor: pointer; transition: transform 0.2s; }
+        .btn-jugar { background: var(--accent-color); } .btn-jugar:hover { transform: scale(1.05); }
+        .btn-reiniciar { background: #475569; color: #fff; } .btn-reiniciar:hover { transform: scale(1.05); }
+        .resultado { width: 100%; max-width: 1100px; background: #141824; border: 3px solid var(--accent-color); padding: 30px; border-radius: 12px; box-sizing: border-box; display: none; margin-bottom: 20px; }
+        .error-critico { border-color: var(--danger-color) !important; }
+        
+        .espera-box { text-align: center; padding: 20px; background: #1e2436; border: 2px dashed #f59e0b; border-radius: 12px; margin-bottom: 20px; display: none; font-size: 1.5rem; color: #f59e0b; font-weight: bold; animation: pulse 2s infinite; }
+        .vs-box { background: linear-gradient(90deg, rgba(0,255,204,0.1) 0%, rgba(168,85,247,0.1) 100%); border: 2px solid var(--vs-color); padding: 20px; border-radius: 12px; margin-bottom: 25px; text-align: center; display: none; }
+        .vs-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; }
+        .vs-score { font-size: 3rem; font-weight: 900; } .player-score { color: var(--accent-color); } .enemy-score { color: #ff3b30; } .vs-center { font-size: 2rem; color: var(--vs-color); font-weight: bold; font-style: italic; }
+        
+        .puntuacion-global-box { text-align: center; background: radial-gradient(circle, #2a2218 0%, #171510 100%); border: 2px solid var(--gold-color); padding: 20px; border-radius: 12px; margin-bottom: 25px; }
+        .score-total { font-size: 4rem; font-weight: 900; color: var(--gold-color); margin: 5px 0; }
+        .grid-notas { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 20px 0; }
+        .nota-card { background: #1e2436; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #2a324a; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* USERNAME SCREEN */
+        .pantalla-username { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; animation: fadeIn 0.5s ease; width: 100%; max-width: 500px; }
+        .pantalla-username h1 { font-size: 3rem; color: var(--accent-color); margin-bottom: 10px; }
+        .pantalla-username p { color: #94a3b8; margin-bottom: 30px; font-size: 1.1rem; }
+        .input-username { width: 100%; max-width: 360px; padding: 16px 20px; font-size: 1.3rem; border-radius: 12px; border: 2px solid #2a324a; background: #1e2436; color: white; outline: none; text-align: center; margin-bottom: 20px; box-sizing: border-box; }
+        .input-username:focus { border-color: var(--accent-color); }
+
+        /* LAYOUT TRES COLUMNAS */
+        .layout-juego { display: grid; grid-template-columns: 260px 1fr 280px; gap: 20px; width: 100%; max-width: 1400px; align-items: start; }
+        .sidebar-izq, .sidebar-der { position: sticky; top: 20px; }
+
+        /* SIDEBAR HISTORIAL */
+        .sidebar-box { background: var(--card-bg); border-radius: 12px; padding: 16px; border: 1px solid #2a324a; }
+        .sidebar-box h3 { margin: 0 0 14px; font-size: 1rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #2a324a; padding-bottom: 8px; }
+        .username-display { color: var(--accent-color); font-weight: bold; font-size: 1.1rem; margin-bottom: 12px; }
+        .historial-lista { display: flex; flex-direction: column; gap: 8px; max-height: 500px; overflow-y: auto; }
+        .historial-lista::-webkit-scrollbar { width: 4px; }
+        .historial-lista::-webkit-scrollbar-thumb { background: #2a324a; border-radius: 4px; }
+        .historial-item { background: #1e2436; border-radius: 8px; padding: 10px 12px; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; font-size: 0.85rem; }
+        .historial-item:hover { border-color: var(--accent-color); }
+        .historial-item .hi-juego { color: #e2e8f0; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .historial-item .hi-score { color: var(--accent-color); font-weight: bold; font-size: 1rem; }
+        .historial-item .hi-fecha { color: #475569; font-size: 0.75rem; margin-top: 2px; }
+        .historial-item .hi-presup { color: #94a3b8; font-size: 0.78rem; }
+        .historial-vacio { color: #475569; font-size: 0.9rem; text-align: center; padding: 20px 0; }
+
+        /* MEJOR PARTIDA */
+        .mejor-score-num { font-size: 2.5rem; font-weight: 900; color: var(--gold-color); }
+        .mejor-juego { color: var(--accent-color); font-size: 0.9rem; margin: 4px 0 12px; }
+        .mejor-comp { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
+        .mejor-comp-item { font-size: 0.78rem; background: #1e2436; padding: 6px 10px; border-radius: 6px; border-left: 3px solid #2a324a; }
+        .mejor-comp-item span { color: var(--accent-color); font-weight: bold; }
+        .mejor-vacio { color: #475569; font-size: 0.9rem; text-align: center; padding: 20px 0; }
+
+        /* MODAL DETALLE PARTIDA */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; z-index: 100; animation: fadeIn 0.2s ease; }
+        .modal-box { background: #141824; border: 2px solid var(--accent-color); border-radius: 16px; padding: 30px; max-width: 560px; width: 90%; max-height: 85vh; overflow-y: auto; }
+        .modal-box h2 { margin: 0 0 6px; color: var(--accent-color); font-size: 1.4rem; }
+        .modal-box .modal-sub { color: #94a3b8; font-size: 0.9rem; margin-bottom: 20px; }
+        .modal-comp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 16px 0; }
+        .modal-comp-card { background: #1e2436; padding: 10px 12px; border-radius: 8px; font-size: 0.82rem; border: 1px solid #2a324a; }
+        .modal-comp-card .mcc-label { color: #64748b; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .modal-comp-card .mcc-nombre { color: #e2e8f0; font-weight: bold; margin: 2px 0; }
+        .modal-comp-card .mcc-precio { color: var(--accent-color); }
+        .modal-notas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+        .modal-nota-item { background: #1e2436; padding: 10px; border-radius: 8px; text-align: center; font-size: 0.82rem; border: 1px solid #2a324a; }
+        .modal-nota-item .mn-val { font-size: 1rem; font-weight: bold; color: #00ffcc; margin-top: 4px; }
+        .modal-close { background: #2a324a; color: #e2e8f0; border: none; padding: 10px 28px; border-radius: 8px; cursor: pointer; font-size: 1rem; margin-top: 20px; width: 100%; transition: background 0.2s; }
+        .modal-close:hover { background: #3a4560; }
+    </style>
+</head>
+<body>
+
+    <!-- PANTALLA USERNAME -->
+    <div id="pantalla-username" class="pantalla-username">
+        <h1>PC Builder Tycoon</h1>
+        <p>¿Cómo te llamas, builder?</p>
+        <input type="text" id="input-username" class="input-username" placeholder="Tu nombre..." maxlength="20" onkeydown="if(event.key==='Enter') confirmarUsername()">
+        <button class="btn-menu solo" onclick="confirmarUsername()">▶ ENTRAR</button>
+    </div>
+
+    <div id="pantalla-inicio" style="display:none; width:100%; max-width:1300px; min-height:80vh; align-items:stretch;">
+        <div style="display:grid; grid-template-columns:260px 1fr 280px; gap:20px; width:100%; padding:40px 0; box-sizing:border-box; align-items:start;">
+
+            <!-- IZQUIERDA: HISTORIAL -->
+            <div class="sidebar-box" style="max-height:80vh; overflow:hidden; display:flex; flex-direction:column;">
+                <div class="username-display" id="sidebar-username">-</div>
+                <h3>Historial</h3>
+                <div class="historial-lista" id="historial-lista" style="flex:1; overflow-y:auto;">
+                    <div class="historial-vacio">Aún no has jugado ninguna partida.</div>
+                </div>
+            </div>
+
+            <!-- CENTRO: MENÚ -->
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; text-align:center;">
+                <h1 style="font-size:3.5rem; color:var(--accent-color); margin-bottom:10px; text-shadow:0 0 20px rgba(0,255,204,0.4);">PC Builder Tycoon</h1>
+                <p style="font-size:1.2rem; color:#94a3b8; margin-bottom:40px;">Economía y Componentes Reales (En Euros €)</p>
+                <div class="botones-menu">
+                    <button class="btn-menu solo" onclick="iniciarSolo()">👤 JUGAR EN SOLITARIO</button>
+                    <button class="btn-menu online" onclick="abrirLobbyP2P()">🌐 MULTIJUGADOR REAL (P2P)</button>
+                </div>
+            </div>
+
+            <!-- DERECHA: MEJOR PARTIDA -->
+            <div class="sidebar-box">
+                <h3>🏆 Mejor Partida</h3>
+                <div id="mejor-partida-box">
+                    <div class="mejor-vacio">Aún no tienes partidas guardadas.</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="pantalla-lobby-p2p" class="pantalla-menu" style="display: none;">
+        <h1 style="color: var(--vs-color);">Sala de Red P2P</h1>
+        
+        <div class="panel-p2p">
+            <h3>Tu Código de Invitación</h3>
+            <div id="mi-id-p2p" class="codigo-sala">Conectando al servidor...</div>
+            <p style="color: #64748b; font-size: 0.9rem;">(Pásale este código a tu amigo)</p>
+        </div>
+
+        <div class="panel-p2p" style="border-color: #3b82f6;">
+            <h3>Unirse a un Amigo</h3>
+            <input type="text" id="input-amigo" class="input-amigo" placeholder="Pega su código aquí...">
+            <br>
+            <button class="btn-menu online" style="font-size: 1.2rem; padding: 15px 30px;" onclick="conectarAmigo()">Conectar</button>
+        </div>
+
+        <div id="estado-p2p" style="font-size: 1.3rem; font-weight: bold; color: var(--gold-color); margin: 15px 0;"></div>
+
+        <div id="botones-host" class="botones-menu" style="display: none; margin-top: 20px;">
+            <button class="btn-menu" style="background: var(--vs-color);" onclick="iniciarPartidaComoHost('normal')">Iniciar 1v1 Normal</button>
+            <button class="btn-menu" style="background: var(--danger-color);" onclick="iniciarPartidaComoHost('chatarra')">Iniciar Desafío Chatarra</button>
+        </div>
+
+        <button class="btn-menu solo" style="margin-top: 30px; font-size: 1rem;" onclick="location.reload()">Volver Atrás</button>
+    </div>
+
+    <div id="pantalla-juego" style="display: none; width: 100%; justify-content: center;">
+        <div style="display:flex; flex-direction:column; align-items:center; width:100%; max-width:1100px;">
+                <header style="width:100%;">
+                    <div id="badge-modo" class="modo-badge">Modo Solitario</div>
+                    <h1>Mercado de Hardware 🛒</h1>
+                </header>
+
+                <div class="hud" style="width:100%;">
+                    <div class="hud-item">Juego a Testear:<br><span class="destacado" id="juego-objetivo">-</span></div>
+                    <div class="hud-item">Presupuesto:<br><span class="destacado" id="presupuesto">-</span></div>
+                    <div class="hud-item">Dinero Invertido:<br><span id="gastado">0€</span></div>
+                    <div class="hud-item">Consumo:<br><span id="energia-hud">0W / 0W</span></div>
+                </div>
+
+                <div class="contenedor-piezas" style="width:100%;">
+                    <div class="tabs-categorias">
+                        <button class="tab-cat activa" data-cat="cpu" onclick="cambiarTab('cpu', this)">🔲 CPU <span class="check-icon">✔</span></button>
+                        <button class="tab-cat" data-cat="gpu" onclick="cambiarTab('gpu', this)">🎮 GPU <span class="check-icon">✔</span></button>
+                        <button class="tab-cat" data-cat="ram" onclick="cambiarTab('ram', this)">💾 RAM <span class="check-icon">✔</span></button>
+                        <button class="tab-cat" data-cat="ssd" onclick="cambiarTab('ssd', this)">💿 SSD <span class="check-icon">✔</span></button>
+                        <button class="tab-cat" data-cat="psu" onclick="cambiarTab('psu', this)">⚡ PSU <span class="check-icon">✔</span></button>
+                        <button class="tab-cat" data-cat="cooler" onclick="cambiarTab('cooler', this)">❄️ Cooler <span class="check-icon">✔</span></button>
+                        <button class="tab-cat" data-cat="case" onclick="cambiarTab('case', this)">🖥️ Case <span class="check-icon">✔</span></button>
+                    </div>
+                    <div class="panel-categoria">
+                        <h3 id="panel-titulo">1. Procesadores (CPU)</h3>
+                        <div class="lista-piezas" id="lista-activa"></div>
+                    </div>
+                </div>
+
+                <div class="controles">
+                    <button class="btn btn-jugar" onclick="evaluarEnsamble()">🖥️ EVALUAR ENSAMBLE</button>
+                    <button class="btn btn-reiniciar" onclick="volverAlMenu()">🏠 SALIR</button>
+                </div>
+
+                <div id="caja-espera-p2p" class="espera-box">⏳ Has terminado. Esperando a tu amigo...</div>
+
+                <div class="resultado" id="zona-resultado" style="width:100%;">
+                    <div id="zona-vs" class="vs-box">
+                        <div style="text-transform: uppercase; color: #a855f7; margin-bottom: 10px;">Enfrentamiento Final</div>
+                        <div class="vs-grid">
+                            <div><div style="color: #94a3b8;">TÚ</div><div class="vs-score player-score" id="vs-tu-nota">0</div></div>
+                            <div class="vs-center">VS</div>
+                            <div><div style="color: #94a3b8;">RIVAL</div><div class="vs-score enemy-score" id="vs-rival-nota">0</div></div>
+                        </div>
+                        <h2 id="resultado-combate" style="margin-top: 20px;">-</h2>
+                    </div>
+                    <div class="puntuacion-global-box" id="caja-puntuacion-normal">
+                        <div style="text-transform: uppercase; color: #cbd5e1;">Puntuación Global del Equipo</div>
+                        <div class="score-total" id="global-score">0 / 100</div>
+                        <div id="rango-texto" style="font-weight: bold; color: #fff;">-</div>
+                    </div>
+                    <div class="grid-notas">
+                        <div class="nota-card"><div>Rendimiento</div><div class="nota-valor" id="nota-fps" style="color: #00ffcc;">-</div></div>
+                        <div class="nota-card"><div>Temperaturas</div><div class="nota-valor" id="nota-temp">-</div></div>
+                        <div class="nota-card"><div>Acústica</div><div class="nota-valor" id="nota-ruido">-</div></div>
+                        <div class="nota-card"><div>Estética</div><div class="nota-valor" id="nota-rgb">-</div></div>
+                    </div>
+                    <p id="analisis-resultado" style="font-size: 1.1rem; line-height: 1.6; background: #1e2436; padding: 15px; border-radius: 8px;"></p>
+                </div>
+        </div>
+    </div>
+
+    <!-- MODAL DETALLE PARTIDA -->
+    <div id="modal-partida" class="modal-overlay" style="display:none;">
+        <div class="modal-box">
+            <h2 id="modal-juego-nombre">-</h2>
+            <div class="modal-sub" id="modal-sub">-</div>
+            <div style="font-size:2.5rem; font-weight:900; color:var(--gold-color);" id="modal-score">-</div>
+            <div class="modal-comp-grid" id="modal-comp-grid"></div>
+            <div class="modal-notas-grid" id="modal-notas-grid"></div>
+            <button class="modal-close" onclick="cerrarModal()">Cerrar</button>
+        </div>
+    </div>
+
+    <script>
+        const juegosReales = [
+    // --- ACCIÓN / AVENTURA / TRIPLE A ---
+    { nombre: "Cyberpunk 2077", fpsBase: 45, cpuPeso: 0.3, gpuPeso: 0.7, ramPeso: 0.1 },
+    { nombre: "Elden Ring", fpsBase: 60, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "GTA V", fpsBase: 160, cpuPeso: 0.5, gpuPeso: 0.4, ramPeso: 0.1 },
+    { nombre: "Red Dead Redemption 2", fpsBase: 55, cpuPeso: 0.35, gpuPeso: 0.55, ramPeso: 0.1 },
+    { nombre: "The Witcher 3: Wild Hunt", fpsBase: 90, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "Hogwarts Legacy", fpsBase: 50, cpuPeso: 0.3, gpuPeso: 0.5, ramPeso: 0.2 },
+    { nombre: "God of War (2018)", fpsBase: 75, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "Spider-Man Remastered", fpsBase: 70, cpuPeso: 0.45, gpuPeso: 0.45, ramPeso: 0.1 },
+    { nombre: "Horizon Forbidden West", fpsBase: 50, cpuPeso: 0.3, gpuPeso: 0.6, ramPeso: 0.1 },
+    { nombre: "Alan Wake 2", fpsBase: 40, cpuPeso: 0.25, gpuPeso: 0.65, ramPeso: 0.1 },
+    { nombre: "Starfield", fpsBase: 45, cpuPeso: 0.45, gpuPeso: 0.4, ramPeso: 0.15 },
+    { nombre: "The Last of Us Part I", fpsBase: 50, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "Assassin's Creed Valhalla", fpsBase: 70, cpuPeso: 0.35, gpuPeso: 0.55, ramPeso: 0.1 },
+    { nombre: "Assassin's Creed Mirage", fpsBase: 65, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "Resident Evil 4 Remake", fpsBase: 80, cpuPeso: 0.3, gpuPeso: 0.6, ramPeso: 0.1 },
+    { nombre: "Resident Evil Village", fpsBase: 100, cpuPeso: 0.3, gpuPeso: 0.6, ramPeso: 0.1 },
+    { nombre: "Monster Hunter: World", fpsBase: 85, cpuPeso: 0.45, gpuPeso: 0.45, ramPeso: 0.1 },
+    { nombre: "Monster Hunter Wilds", fpsBase: 45, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "Dragon's Dogma 2", fpsBase: 40, cpuPeso: 0.55, gpuPeso: 0.35, ramPeso: 0.1 },
+    { nombre: "Ghost of Tsushima", fpsBase: 65, cpuPeso: 0.35, gpuPeso: 0.55, ramPeso: 0.1 },
+    { nombre: "Uncharted: Legacy of Thieves", fpsBase: 75, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "Days Gone", fpsBase: 90, cpuPeso: 0.35, gpuPeso: 0.55, ramPeso: 0.1 },
+    { nombre: "Death Stranding", fpsBase: 100, cpuPeso: 0.3, gpuPeso: 0.6, ramPeso: 0.1 },
+    { nombre: "Control", fpsBase: 70, cpuPeso: 0.3, gpuPeso: 0.6, ramPeso: 0.1 },
+    { nombre: "Hellblade 2: Senua's Saga", fpsBase: 40, cpuPeso: 0.2, gpuPeso: 0.7, ramPeso: 0.1 },
+    { nombre: "Star Wars Jedi: Survivor", fpsBase: 50, cpuPeso: 0.4, gpuPeso: 0.45, ramPeso: 0.15 },
+    { nombre: "Avatar: Frontiers of Pandora", fpsBase: 50, cpuPeso: 0.3, gpuPeso: 0.6, ramPeso: 0.1 },
+    { nombre: "Far Cry 6", fpsBase: 85, cpuPeso: 0.45, gpuPeso: 0.45, ramPeso: 0.1 },
+    { nombre: "Dying Light 2 Stay Human", fpsBase: 60, cpuPeso: 0.35, gpuPeso: 0.55, ramPeso: 0.1 },
+    { nombre: "Dead Space Remake", fpsBase: 65, cpuPeso: 0.35, gpuPeso: 0.55, ramPeso: 0.1 },
+
+    // --- SHOOTERS Y SHOTERS TÁCTICOS (FPS / TPS) ---
+    { nombre: "Valorant", fpsBase: 300, cpuPeso: 0.7, gpuPeso: 0.2, ramPeso: 0.1 },
+    { nombre: "Counter-Strike 2", fpsBase: 240, cpuPeso: 0.6, gpuPeso: 0.3, ramPeso: 0.1 },
+    { nombre: "Apex Legends", fpsBase: 140, cpuPeso: 0.45, gpuPeso: 0.45, ramPeso: 0.1 },
+    { nombre: "Call of Duty: Warzone", fpsBase: 110, cpuPeso: 0.5, gpuPeso: 0.4, ramPeso: 0.1 },
+    { nombre: "Tom Clancy's Rainbow Six Siege", fpsBase: 200, cpuPeso: 0.5, gpuPeso: 0.4, ramPeso: 0.1 },
+    { nombre: "Overwatch 2", fpsBase: 180, cpuPeso: 0.5, gpuPeso: 0.4, ramPeso: 0.1 },
+    { nombre: "The Finals", fpsBase: 90, cpuPeso: 0.45, gpuPeso: 0.45, ramPeso: 0.1 },
+    { nombre: "Fortnite", fpsBase: 160, cpuPeso: 0.5, gpuPeso: 0.4, ramPeso: 0.1 },
+    { nombre: "PUBG: Battlegrounds", fpsBase: 120, cpuPeso: 0.45, gpuPeso: 0.45, ramPeso: 0.1 },
+    { nombre: "Destiny 2", fpsBase: 110, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "Battlefield 2042", fpsBase: 85, cpuPeso: 0.55, gpuPeso: 0.35, ramPeso: 0.1 },
+    { nombre: "Escape from Tarkov", fpsBase: 70, cpuPeso: 0.5, gpuPeso: 0.3, ramPeso: 0.2 },
+    { nombre: "Hunt: Showdown 1896", fpsBase: 80, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "Doom Eternal", fpsBase: 150, cpuPeso: 0.3, gpuPeso: 0.6, ramPeso: 0.1 },
+    { nombre: "Metro Exodus", fpsBase: 80, cpuPeso: 0.35, gpuPeso: 0.55, ramPeso: 0.1 },
+    { nombre: "Borderlands 3", fpsBase: 95, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "Team Fortress 2", fpsBase: 250, cpuPeso: 0.7, gpuPeso: 0.2, ramPeso: 0.1 },
+    { nombre: "Left 4 Dead 2", fpsBase: 280, cpuPeso: 0.6, gpuPeso: 0.3, ramPeso: 0.1 },
+    { nombre: "Payday 3", fpsBase: 75, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "Arma 3", fpsBase: 50, cpuPeso: 0.7, gpuPeso: 0.2, ramPeso: 0.1 },
+
+    // --- ROL, ESTRATEGIA Y SIMULACIÓN (RPG / RTS / SIM) ---
+    { nombre: "Baldur's Gate 3", fpsBase: 55, cpuPeso: 0.5, gpuPeso: 0.35, ramPeso: 0.15 },
+    { nombre: "Minecraft", fpsBase: 200, cpuPeso: 0.65, gpuPeso: 0.15, ramPeso: 0.2 },
+    { nombre: "Roblox", fpsBase: 120, cpuPeso: 0.6, gpuPeso: 0.3, ramPeso: 0.1 },
+    { nombre: "Genshin Impact", fpsBase: 60, cpuPeso: 0.35, gpuPeso: 0.55, ramPeso: 0.1 },
+    { nombre: "Honkai: Star Rail", fpsBase: 60, cpuPeso: 0.3, gpuPeso: 0.6, ramPeso: 0.1 },
+    { nombre: "Palworld", fpsBase: 65, cpuPeso: 0.4, gpuPeso: 0.45, ramPeso: 0.15 },
+    { nombre: "Helldivers 2", fpsBase: 65, cpuPeso: 0.5, gpuPeso: 0.4, ramPeso: 0.1 },
+    { nombre: "World of Warcraft", fpsBase: 100, cpuPeso: 0.6, gpuPeso: 0.3, ramPeso: 0.1 },
+    { nombre: "Final Fantasy XIV", fpsBase: 90, cpuPeso: 0.5, gpuPeso: 0.4, ramPeso: 0.1 },
+    { nombre: "The Sims 4", fpsBase: 130, cpuPeso: 0.5, gpuPeso: 0.3, ramPeso: 0.2 },
+    { nombre: "Cities: Skylines II", fpsBase: 35, cpuPeso: 0.55, gpuPeso: 0.3, ramPeso: 0.15 },
+    { nombre: "Microsoft Flight Simulator", fpsBase: 40, cpuPeso: 0.5, gpuPeso: 0.35, ramPeso: 0.15 },
+    { nombre: "Civilization VI", fpsBase: 75, cpuPeso: 0.65, gpuPeso: 0.2, ramPeso: 0.15 },
+    { nombre: "Crusader Kings III", fpsBase: 70, cpuPeso: 0.7, gpuPeso: 0.15, ramPeso: 0.15 },
+    { nombre: "Hearts of Iron IV", fpsBase: 65, cpuPeso: 0.75, gpuPeso: 0.1, ramPeso: 0.15 },
+    { nombre: "Total War: Warhammer III", fpsBase: 55, cpuPeso: 0.5, gpuPeso: 0.4, ramPeso: 0.1 },
+    { nombre: "Stardew Valley", fpsBase: 500, cpuPeso: 0.5, gpuPeso: 0.1, ramPeso: 0.4 },
+    { nombre: "Terraria", fpsBase: 400, cpuPeso: 0.5, gpuPeso: 0.2, ramPeso: 0.3 },
+    { nombre: "RimWorld", fpsBase: 90, cpuPeso: 0.75, gpuPeso: 0.1, ramPeso: 0.15 },
+    { nombre: "Factorio", fpsBase: 250, cpuPeso: 0.6, gpuPeso: 0.1, ramPeso: 0.3 },
+
+    // --- DEPORTES Y CONDUCCIÓN ---
+    { nombre: "EA Sports FC 24", fpsBase: 120, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "EA Sports FC 25", fpsBase: 110, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "NBA 2K24", fpsBase: 100, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "Forza Horizon 5", fpsBase: 95, cpuPeso: 0.35, gpuPeso: 0.55, ramPeso: 0.1 },
+    { nombre: "Forza Motorsport", fpsBase: 60, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "Assetto Corsa Competizione", fpsBase: 80, cpuPeso: 0.45, gpuPeso: 0.45, ramPeso: 0.1 },
+    { nombre: "iRacing", fpsBase: 110, cpuPeso: 0.5, gpuPeso: 0.4, ramPeso: 0.1 },
+    { nombre: "F1 23", fpsBase: 100, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "F1 24", fpsBase: 90, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "Rocket League", fpsBase: 250, cpuPeso: 0.5, gpuPeso: 0.4, ramPeso: 0.1 },
+    { nombre: "The Crew Motorfest", fpsBase: 70, cpuPeso: 0.35, gpuPeso: 0.55, ramPeso: 0.1 },
+    { nombre: "Need for Speed Unbound", fpsBase: 75, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "Euro Truck Simulator 2", fpsBase: 110, cpuPeso: 0.45, gpuPeso: 0.45, ramPeso: 0.1 },
+
+    // --- COOPERATIVOS, INDIES Y MULTIJUGADOR ---
+    { nombre: "League of Legends", fpsBase: 220, cpuPeso: 0.65, gpuPeso: 0.25, ramPeso: 0.1 },
+    { nombre: "Dota 2", fpsBase: 140, cpuPeso: 0.6, gpuPeso: 0.3, ramPeso: 0.1 },
+    { nombre: "Among Us", fpsBase: 300, cpuPeso: 0.4, gpuPeso: 0.2, ramPeso: 0.4 },
+    { nombre: "Fall Guys", fpsBase: 140, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "Phasmophobia", fpsBase: 90, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "Lethal Company", fpsBase: 120, cpuPeso: 0.45, gpuPeso: 0.35, ramPeso: 0.2 },
+    { nombre: "Rust", fpsBase: 75, cpuPeso: 0.45, gpuPeso: 0.35, ramPeso: 0.2 },
+    { nombre: "Ark: Survival Ascended", fpsBase: 35, cpuPeso: 0.3, gpuPeso: 0.6, ramPeso: 0.1 },
+    { nombre: "Sea of Thieves", fpsBase: 100, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "Dead by Daylight", fpsBase: 90, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "Hades", fpsBase: 240, cpuPeso: 0.4, gpuPeso: 0.3, ramPeso: 0.3 },
+    { nombre: "Hades II", fpsBase: 200, cpuPeso: 0.4, gpuPeso: 0.4, ramPeso: 0.2 },
+    { nombre: "Hollow Knight", fpsBase: 250, cpuPeso: 0.4, gpuPeso: 0.3, ramPeso: 0.3 },
+    { nombre: "Sons of the Forest", fpsBase: 65, cpuPeso: 0.4, gpuPeso: 0.5, ramPeso: 0.1 },
+    { nombre: "Warframe", fpsBase: 150, cpuPeso: 0.45, gpuPeso: 0.45, ramPeso: 0.1 },
+    { nombre: "Deep Rock Galactic", fpsBase: 110, cpuPeso: 0.45, gpuPeso: 0.45, ramPeso: 0.1 },
+    { nombre: "V Rising", fpsBase: 80, cpuPeso: 0.45, gpuPeso: 0.45, ramPeso: 0.1 }
+];
+
+
+        const componentes = {
+            cpu: [
+    // --- GAMA ENTRADA / OFICINA (0-35 rendimiento) ---
+    { id: "c0", nombre: "Intel Celeron G5905", precio: 40, rendimiento: 15, consumo: 58 },
+    { id: "c1", nombre: "AMD Athlon 3000G", precio: 50, rendimiento: 18, consumo: 35 },
+    { id: "c2", nombre: "Intel Pentium Gold G6400", precio: 60, rendimiento: 22, consumo: 58 },
+    { id: "c3", nombre: "Intel Core i3-10100F", precio: 70, rendimiento: 30, consumo: 65 },
+    { id: "c4", nombre: "AMD Ryzen 3 3200G", precio: 75, rendimiento: 32, consumo: 65 },
+    { id: "c5", nombre: "Intel Core i3-10105F", precio: 78, rendimiento: 33, consumo: 65 },
+    { id: "c6", nombre: "AMD Ryzen 3 4100", precio: 65, rendimiento: 35, consumo: 65 },
+
+    // --- GAMA MEDIA BAJA / CALIDAD-PRECIO (36-55 rendimiento) ---
+    { id: "c7", nombre: "Intel Core i5-10400F", precio: 90, rendimiento: 40, consumo: 65 },
+    { id: "c8", nombre: "AMD Ryzen 5 3600", precio: 85, rendimiento: 42, consumo: 65 },
+    { id: "c9", nombre: "Intel Core i3-12100F", precio: 95, rendimiento: 45, consumo: 60 },
+    { id: "c10", nombre: "Intel Core i5-11400F", precio: 105, rendimiento: 47, consumo: 65 },
+    { id: "c11", nombre: "AMD Ryzen 5 4500", precio: 80, rendimiento: 43, consumo: 65 },
+    { id: "c12", nombre: "AMD Ryzen 5 5500", precio: 95, rendimiento: 50, consumo: 65 },
+    { id: "c13", nombre: "Intel Core i3-13100F", precio: 110, rendimiento: 52, consumo: 60 },
+    { id: "c14", nombre: "AMD Ryzen 5 5600", precio: 125, rendimiento: 55, consumo: 65 },
+
+    // --- GAMA MEDIA ALTA (56-75 rendimiento) ---
+    { id: "c15", nombre: "Intel Core i5-12400F", precio: 140, rendimiento: 60, consumo: 65 },
+    { id: "c16", nombre: "AMD Ryzen 5 5600X", precio: 145, rendimiento: 62, consumo: 65 },
+    { id: "c17", nombre: "Intel Core i5-13400F", precio: 180, rendimiento: 68, consumo: 65 },
+    { id: "c18", nombre: "AMD Ryzen 7 5700X", precio: 170, rendimiento: 70, consumo: 65 },
+    { id: "c19", nombre: "Intel Core i5-12600KF", precio: 190, rendimiento: 72, consumo: 125 },
+    { id: "c20", nombre: "AMD Ryzen 5 7500F", precio: 175, rendimiento: 74, consumo: 65 },
+    { id: "c21", nombre: "Intel Core i5-14400F", precio: 200, rendimiento: 75, consumo: 65 },
+
+    // --- GAMA ALTA / GAMING ENTUSIASTA (76-95 rendimiento) ---
+    { id: "c22", nombre: "AMD Ryzen 5 7600", precio: 230, rendimiento: 82, consumo: 65 },
+    { id: "c23", nombre: "AMD Ryzen 5 7600X", precio: 245, rendimiento: 85, consumo: 105 },
+    { id: "c24", nombre: "Intel Core i5-13600KF", precio: 280, rendimiento: 88, consumo: 125 },
+    { id: "c25", nombre: "AMD Ryzen 7 7700", precio: 290, rendimiento: 89, consumo: 65 },
+    { id: "c26", nombre: "Intel Core i7-13700KF", precio: 340, rendimiento: 92, consumo: 125 },
+    { id: "c27", nombre: "AMD Ryzen 7 7700X", precio: 310, rendimiento: 92, consumo: 105 },
+    { id: "c28", nombre: "Intel Core i5-14600KF", precio: 300, rendimiento: 93, consumo: 125 },
+    { id: "c29", nombre: "AMD Ryzen 7 5800X3D", precio: 320, rendimiento: 94, consumo: 105 },
+    { id: "c30", nombre: "Intel Core Ultra 5 245K", precio: 320, rendimiento: 95, consumo: 125 },
+
+    // --- GAMA TOP EXTREMA (96-120 rendimiento) ---
+    { id: "c31", nombre: "Intel Core i7-14700KF", precio: 380, rendimiento: 98, consumo: 125 },
+    { id: "c32", nombre: "AMD Ryzen 9 7900X", precio: 390, rendimiento: 99, consumo: 170 },
+    { id: "c33", nombre: "AMD Ryzen 7 9700X", precio: 360, rendimiento: 100, consumo: 65 },
+    { id: "c34", nombre: "Intel Core Ultra 7 265K", precio: 410, rendimiento: 102, consumo: 125 },
+    { id: "c35", nombre: "AMD Ryzen 9 9900X", precio: 480, rendimiento: 104, consumo: 120 },
+    { id: "c36", nombre: "Intel Core i9-13900KF", precio: 460, rendimiento: 105, consumo: 125 },
+    { id: "c37", nombre: "AMD Ryzen 9 7950X", precio: 520, rendimiento: 106, consumo: 170 },
+    { id: "c38", nombre: "Intel Core i9-14900KF", precio: 530, rendimiento: 108, consumo: 125 },
+    { id: "c39", nombre: "AMD Ryzen 9 7950X3D", precio: 580, rendimiento: 109, consumo: 120 },
+    { id: "c40", nombre: "AMD Ryzen 7 7800X3D", precio: 380, rendimiento: 110, consumo: 120 },
+    { id: "c41", nombre: "Intel Core Ultra 9 285K", precio: 600, rendimiento: 111, consumo: 125 },
+    { id: "c42", nombre: "AMD Ryzen 9 9950X", precio: 650, rendimiento: 112, consumo: 170 },
+    { id: "c43", nombre: "AMD Ryzen 7 9800X3D", precio: 480, rendimiento: 120, consumo: 120 },
+
+    // --- VARIANTES DE CONSUMO EFICIENTE / PORTÁTILES ADAPTADOS (Extra complementos) ---
+    { id: "c44", nombre: "AMD Ryzen 5 4600G", precio: 90, rendimiento: 44, consumo: 65 },
+    { id: "c45", nombre: "AMD Ryzen 7 5700G", precio: 160, rendimiento: 64, consumo: 65 },
+    { id: "c46", nombre: "Intel Core i7-12700F", precio: 260, rendimiento: 80, consumo: 65 },
+    { id: "c47", nombre: "AMD Ryzen 9 5900X", precio: 280, rendimiento: 86, consumo: 105 },
+    { id: "c48", nombre: "AMD Ryzen 9 5950X", precio: 360, rendimiento: 95, consumo: 105 },
+    { id: "c49", nombre: "AMD Ryzen 9 9900", precio: 430, rendimiento: 101, consumo: 65 }
+],
+            gpu: [
+    // --- GAMA BAJA / MULTIMEDIA / ENTRADA (0-29 rendimiento) ---
+    { id: "g0", nombre: "NVIDIA GT 1030 2GB", precio: 65, rendimiento: 10, consumo: 30 },
+    { id: "g1", nombre: "AMD Radeon RX 550 4GB", precio: 75, rendimiento: 12, consumo: 50 },
+    { id: "g2", nombre: "NVIDIA GTX 1050 Ti 4GB", precio: 90, rendimiento: 16, consumo: 75 },
+    { id: "g3", nombre: "NVIDIA GTX 1650 4GB", precio: 120, rendimiento: 22, consumo: 75 },
+    { id: "g4", nombre: "AMD Radeon RX 580 8GB", precio: 115, rendimiento: 25, consumo: 185 },
+    { id: "g5", nombre: "AMD Radeon RX 6400 4GB", precio: 110, rendimiento: 24, consumo: 53 },
+    { id: "g6", nombre: "NVIDIA GTX 1660 Super 6GB", precio: 160, rendimiento: 32, consumo: 125 },
+    { id: "g7", nombre: "AMD Radeon RX 6500 XT 4GB", precio: 140, rendimiento: 28, consumo: 107 },
+
+    // --- GAMA MEDIA BAJA / 1080p ESTÁNDAR (30-59 rendimiento) ---
+    { id: "g8", nombre: "NVIDIA RTX 3050 8GB", precio: 190, rendimiento: 38, consumo: 130 },
+    { id: "g9", nombre: "AMD Radeon RX 6600 8GB", precio: 210, rendimiento: 48, consumo: 132 },
+    { id: "g10", nombre: "Intel Arc A580 8GB", precio: 180, rendimiento: 42, consumo: 185 },
+    { id: "g11", nombre: "NVIDIA RTX 2060 Super 8GB", precio: 220, rendimiento: 44, consumo: 175 },
+    { id: "g12", nombre: "NVIDIA RTX 3060 12GB", precio: 265, rendimiento: 50, consumo: 170 },
+    { id: "g13", nombre: "Intel Arc A750 8GB", precio: 200, rendimiento: 49, consumo: 225 },
+    { id: "g14", nombre: "AMD Radeon RX 6650 XT 8GB", precio: 240, rendimiento: 54, consumo: 180 },
+    { id: "g15", nombre: "Intel Arc A770 16GB", precio: 270, rendimiento: 56, consumo: 225 },
+    { id: "g16", nombre: "AMD Radeon RX 7600 8GB", precio: 260, rendimiento: 58, consumo: 165 },
+
+    // --- GAMA MEDIA / 1080p ULTRA Y 1440p ENTRADA (60-89 rendimiento) ---
+    { id: "g17", nombre: "NVIDIA RTX 4060 8GB", precio: 300, rendimiento: 60, consumo: 115 },
+    { id: "g18", nombre: "NVIDIA RTX 3060 Ti 8GB", precio: 310, rendimiento: 62, consumo: 200 },
+    { id: "g19", nombre: "AMD Radeon RX 6700 XT 12GB", precio: 330, rendimiento: 66, consumo: 230 },
+    { id: "g20", nombre: "NVIDIA RTX 4060 Ti 8GB", precio: 380, rendimiento: 70, consumo: 160 },
+    { id: "g21", nombre: "AMD Radeon RX 7600 XT 16GB", precio: 340, rendimiento: 68, consumo: 190 },
+    { id: "g22", nombre: "NVIDIA RTX 3070 8GB", precio: 360, rendimiento: 72, consumo: 220 },
+    { id: "g23", nombre: "NVIDIA RTX 4060 Ti 16GB", precio: 450, rendimiento: 73, consumo: 165 },
+    { id: "g24", nombre: "AMD Radeon RX 6800 16GB", precio: 390, rendimiento: 78, consumo: 250 },
+    { id: "g25", nombre: "NVIDIA RTX 3070 Ti 8GB", precio: 420, rendimiento: 79, consumo: 290 },
+    { id: "g26", nombre: "AMD Radeon RX 7700 XT 12GB", precio: 430, rendimiento: 84, consumo: 245 },
+
+    // --- GAMA MEDIA ALTA / 1440p COMPETITIVO (90-129 rendimiento) ---
+    { id: "g27", nombre: "NVIDIA RTX 3080 10GB", precio: 500, rendimiento: 90, consumo: 320 },
+    { id: "g28", nombre: "AMD Radeon RX 6800 XT 16GB", precio: 480, rendimiento: 88, consumo: 300 },
+    { id: "g29", nombre: "NVIDIA RTX 4070 12GB", precio: 540, rendimiento: 92, consumo: 200 },
+    { id: "g30", nombre: "AMD Radeon RX 7800 XT 16GB", precio: 510, rendimiento: 96, consumo: 263 },
+    { id: "g31", nombre: "NVIDIA RTX 4070 SUPER 12GB", precio: 600, rendimiento: 100, consumo: 220 },
+    { id: "g32", nombre: "NVIDIA RTX 3080 Ti 12GB", precio: 580, rendimiento: 98, consumo: 350 },
+    { id: "g33", nombre: "AMD Radeon RX 6900 XT 16GB", precio: 550, rendimiento: 97, consumo: 300 },
+    { id: "g34", nombre: "NVIDIA RTX 3090 24GB", precio: 700, rendimiento: 102, consumo: 350 },
+    { id: "g35", nombre: "AMD Radeon RX 7900 GRE 16GB", precio: 560, rendimiento: 104, consumo: 260 },
+    { id: "g36", nombre: "NVIDIA RTX 4070 Ti 12GB", precio: 720, rendimiento: 110, consumo: 285 },
+    { id: "g37", nombre: "NVIDIA RTX 3090 Ti 24GB", precio: 800, rendimiento: 112, consumo: 450 },
+    { id: "g38", nombre: "NVIDIA RTX 4070 Ti SUPER 16GB", precio: 820, rendimiento: 118, consumo: 285 },
+
+    // --- GAMA ALTA / RENDIMIENTO EXTREMO Y 4K (130-179 rendimiento) ---
+    { id: "g39", nombre: "AMD Radeon RX 7900 XT 20GB", precio: 750, rendimiento: 125, consumo: 315 },
+    { id: "g40", nombre: "NVIDIA RTX 4080 16GB", precio: 1050, rendimiento: 140, consumo: 320 },
+    { id: "g41", nombre: "NVIDIA RTX 4080 SUPER 16GB", precio: 1000, rendimiento: 145, consumo: 320 },
+    { id: "g42", nombre: "AMD Radeon RX 7900 XTX 24GB", precio: 950, rendimiento: 148, consumo: 355 },
+    { id: "g43", nombre: "NVIDIA RTX 5070 12GB", precio: 650, rendimiento: 130, consumo: 250 },
+    { id: "g44", nombre: "NVIDIA RTX 5070 Ti 16GB", precio: 850, rendimiento: 155, consumo: 300 },
+
+    // --- GAMA ENTUSIASTA / TOP DE LÍNEA (180+ rendimiento) ---
+    { id: "g45", nombre: "NVIDIA RTX 4090 24GB", precio: 1800, rendimiento: 200, consumo: 450 },
+    { id: "g46", nombre: "NVIDIA RTX 5080 16GB", precio: 1200, rendimiento: 190, consumo: 400 },
+    { id: "g47", nombre: "NVIDIA RTX 5090 32GB", precio: 2200, rendimiento: 270, consumo: 600 },
+
+    // --- MODELOS DE RELLENO Y EDICIONES EFICIENTES (Equilibrio de catálogo) ---
+    { id: "g48", nombre: "NVIDIA GTX 1660 6GB", precio: 145, rendimiento: 29, consumo: 120 },
+    { id: "g49", nombre: "AMD Radeon RX 5600 XT 6GB", precio: 150, rendimiento: 35, consumo: 150 },
+    { id: "g50", nombre: "NVIDIA RTX 2060 6GB", precio: 180, rendimiento: 38, consumo: 160 },
+    { id: "g51", nombre: "AMD Radeon RX 6700 10GB", precio: 290, rendimiento: 60, consumo: 175 },
+    { id: "g52", nombre: "NVIDIA RTX 2070 Super 8GB", precio: 240, rendimiento: 52, consumo: 215 },
+    { id: "g53", nombre: "NVIDIA RTX 2080 Super 8GB", precio: 300, rendimiento: 64, consumo: 250 },
+    { id: "g54", nombre: "NVIDIA RTX 2080 Ti 11GB", precio: 350, rendimiento: 74, consumo: 250 }
+],
+            ram: [
+    // --- GAMA ENTRADA / DDR4 ECONÓMICA (0-59 rendimiento) ---
+    { id: "r0", nombre: "Crucial 8GB DDR4 Básica", precio: 18, rendimiento: 30, rgb: 0, consumo: 5 },
+    { id: "r1", nombre: "Kingston Fury Beast 8GB DDR4", precio: 22, rendimiento: 35, rgb: 0, consumo: 5 },
+    { id: "r2", nombre: "Corsair Vengeance LPX 16GB DDR4", precio: 45, rendimiento: 60, rgb: 0, consumo: 8 },
+    { id: "r3", nombre: "G.Skill Aegis 16GB DDR4", precio: 40, rendimiento: 58, rgb: 0, consumo: 7 },
+    { id: "r4", nombre: "Teamgroup T-Force Vulcan 16GB", precio: 42, rendimiento: 62, rgb: 0, consumo: 8 },
+
+    // --- GAMA MEDIA / DDR4 ALTA VELOCIDAD Y DDR5 ENTRADA (60-84 rendimiento) ---
+    { id: "r5", nombre: "Corsair Vengeance RGB 32GB DDR4", precio: 95, rendimiento: 80, rgb: 80, consumo: 12 },
+    { id: "r6", nombre: "Kingston Fury Beast RGB 16GB DDR4", precio: 55, rendimiento: 65, rgb: 80, consumo: 9 },
+    { id: "r7", nombre: "Crucial 16GB DDR5 Estándar", precio: 50, rendimiento: 75, rgb: 0, consumo: 8 },
+    { id: "r8", nombre: "G.Skill Ripjaws V 32GB DDR4", precio: 80, rendimiento: 78, rgb: 0, consumo: 10 },
+    { id: "r9", nombre: "Teamgroup T-Force Delta RGB 32GB DDR4", precio: 90, rendimiento: 82, rgb: 90, consumo: 12 },
+
+    // --- GAMA ALTA / DDR5 RENDIMIENTO Y ENTUSIASTA (85-110 rendimiento) ---
+    { id: "r10", nombre: "G.Skill Flare X5 32GB DDR5", precio: 110, rendimiento: 100, rgb: 0, consumo: 10 },
+    { id: "r11", nombre: "Corsair Vengeance DDR5 32GB", precio: 115, rendimiento: 102, rgb: 0, consumo: 10 },
+    { id: "r12", nombre: "Kingston Fury Renegade RGB 32GB DDR5", precio: 135, rendimiento: 105, rgb: 85, consumo: 13 },
+    { id: "r13", nombre: "Corsair Dominator Titanium 32GB DDR5", precio: 175, rendimiento: 110, rgb: 95, consumo: 14 },
+    { id: "r14", nombre: "G.Skill Trident Z5 RGB 64GB DDR5", precio: 220, rendimiento: 108, rgb: 90, consumo: 15 }
+],
+            ssd: [
+    // --- DISCOS MECÁNICOS / ALMACENAMIENTO MASIVO (0-19 rendimiento) ---
+    { id: "s0", nombre: "HDD Mecánico Usado 500GB", precio: 15, rendimiento: 5 },
+    { id: "s1", nombre: "Toshiba P300 1TB HDD", precio: 38, rendimiento: 9 },
+    { id: "s2", nombre: "Seagate BarraCuda 1TB HDD", precio: 40, rendimiento: 10 },
+    { id: "s3", nombre: "WD Blue 2TB HDD", precio: 60, rendimiento: 12 },
+
+    // --- SSD SATA / GAMA DE ENTRADA (20-49 rendimiento) ---
+    { id: "s4", nombre: "Kingston A400 240GB SSD SATA", precio: 20, rendimiento: 38 },
+    { id: "s5", nombre: "Kingston A400 480GB SSD SATA", precio: 30, rendimiento: 40 },
+    { id: "s6", nombre: "Crucial BX500 1TB SSD SATA", precio: 55, rendimiento: 42 },
+    { id: "s7", nombre: "Samsung 870 EVO 1TB SSD SATA", precio: 75, rendimiento: 48 },
+
+    // --- SSD M.2 NVMe PCIe GEN 3 (50-69 rendimiento) ---
+    { id: "s8", nombre: "Crucial P3 500GB M.2 NVMe", precio: 40, rendimiento: 55 },
+    { id: "s9", nombre: "Kingston NV2 1TB M.2 NVMe", precio: 60, rendimiento: 62 },
+    { id: "s10", nombre: "WD Blue SN570 1TB M.2 NVMe", precio: 65, rendimiento: 65 },
+    { id: "s11", nombre: "Samsung 970 EVO Plus 1TB M.2", precio: 78, rendimiento: 68 },
+
+    // --- SSD M.2 NVMe PCIe GEN 4 / RENDIMIENTO GAMING (70-99 rendimiento) ---
+    { id: "s12", nombre: "WD Blue SN580 1TB M.2 NVMe", precio: 75, rendimiento: 75 },
+    { id: "s13", nombre: "Crucial P3 Plus 1TB PCIe Gen4", precio: 70, rendimiento: 72 },
+    { id: "s14", nombre: "Corsair MP600 Core XT 1TB", precio: 80, rendimiento: 78 },
+    { id: "s15", nombre: "Kingston KC3000 1TB PCIe Gen4", precio: 95, rendimiento: 90 },
+    { id: "s16", nombre: "Samsung 980 PRO 1TB M.2 NVMe", precio: 100, rendimiento: 92 },
+    { id: "s17", nombre: "WD Black SN850X 2TB M.2 NVMe", precio: 160, rendimiento: 96 },
+    { id: "s18", nombre: "Samsung 990 PRO 2TB M.2 NVMe", precio: 180, rendimiento: 98 },
+
+    // --- SSD M.2 NVMe PCIe GEN 5 / ALTA GAMA TOP (100+ rendimiento) ---
+    { id: "s19", nombre: "Crucial T700 2TB Gen5 NVMe", precio: 250, rendimiento: 120 }
+],
+            psu: [
+    // --- FUENTES ECONÓMICAS Y ENTRADA (500W - 600W) ---
+    { id: "p1", nombre: "Fuente Genérica 500W", precio: 20, watts: 500, ruido: 65 },
+    { id: "p2", nombre: "Thermaltake 500W 80+ White", precio: 40, watts: 500, ruido: 45 },
+    { id: "p3", nombre: "EVGA 600W W1 80+ White", precio: 50, watts: 600, ruido: 42 },
+
+    // --- GAMA MEDIA / CALIDAD-PRECIO (650W - 750W) ---
+    { id: "p4", nombre: "Corsair CX650M 80+ Bronze", precio: 80, watts: 650, ruido: 35 },
+    { id: "p5", nombre: "MSI MAG A650BN 80+ Bronze", precio: 65, watts: 650, ruido: 38 },
+    { id: "p6", nombre: "Gigabyte UD750GM 80+ Gold", precio: 95, watts: 750, ruido: 28 },
+
+    // --- GAMA ALTA / EFICIENCIA PREMIUM (850W - 1000W) ---
+    { id: "p7", nombre: "Corsair RM850x 80+ Gold", precio: 140, watts: 850, ruido: 20 },
+    { id: "p8", nombre: "be quiet! Pure Power 12 M 850W", precio: 130, watts: 850, ruido: 18 },
+    { id: "p9", nombre: "Seasonics Focus GX-1000 80+ Gold", precio: 180, watts: 1000, ruido: 15 },
+
+    // --- GAMA ENTHUSIAST EXTREMA (1600W) ---
+    { id: "p10", nombre: "Corsair AX1600i Titanium", precio: 600, watts: 1600, ruido: 5 }
+],
+            cooler: [
+                { id: "cl1", nombre: "Disipador de Fábrica", precio: 0, enfriamiento: 35, ruido: 55, rgb: 0 },
+                { id: "cl2", nombre: "DeepCool AK400", precio: 30, enfriamiento: 65, ruido: 35, rgb: 0 },
+                { id: "cl7", nombre: "NZXT Kraken 240 RGB", precio: 140, enfriamiento: 90, ruido: 30, rgb: 80 }
+            ],
+            case: [
+    // --- GAMA ULTRA BAJA / EXPERIMENTOS (0-29 flujo de aire) ---
+    { id: "cs0", nombre: "Caja de Cartón", precio: 5, flujoAire: 10, rgb: 0 },
+    { id: "cs1", nombre: "Gabinete Genérico de Oficina", precio: 25, flujoAire: 20, rgb: 0 },
+    { id: "cs2", nombre: "Acteck Frontier Economat", precio: 30, flujoAire: 22, rgb: 0 },
+
+    // --- GAMA ENTRADA / ECONÓMICOS CON ALGO DE VENTILACIÓN (30-59 flujo de aire) ---
+    { id: "cs3", nombre: "Aerocool Cylon RGB", precio: 45, flujoAire: 35, rgb: 40 },
+    { id: "cs4", nombre: "Nox Hummer MC Pro", precio: 50, flujoAire: 40, rgb: 50 },
+    { id: "cs5", nombre: "Cougar MX330-G", precio: 55, flujoAire: 50, rgb: 0 },
+    { id: "cs6", nombre: "Mars Gaming MC-X7", precio: 48, flujoAire: 45, rgb: 70 },
+    { id: "cs7", nombre: "DeepCool Matrexx 40 3FS", precio: 52, flujoAire: 55, rgb: 60 },
+    { id: "cs8", nombre: "BitFenix Nova Mesh SE", precio: 60, flujoAire: 58, rgb: 65 },
+
+    // --- GAMA MEDIA / FLUJO DE AIRE EXCELENTE (60-84 flujo de aire) ---
+    { id: "cs9", nombre: "Corsair 4000D Airflow", precio: 85, flujoAire: 72, rgb: 0 },
+    { id: "cs10", nombre: "NZXT H5 Flow", precio: 90, flujoAire: 75, rgb: 0 },
+    { id: "cs11", nombre: "Phanteks Eclipse G360A", precio: 95, flujoAire: 78, rgb: 80 },
+    { id: "cs12", nombre: "Lian Li Lancool 216", precio: 100, flujoAire: 84, rgb: 75 },
+    { id: "cs13", nombre: "Montech AIR 903 MAX", precio: 75, flujoAire: 80, rgb: 85 },
+    { id: "cs14", nombre: "Fractal Design Pop Air", precio: 88, flujoAire: 70, rgb: 40 },
+    { id: "cs15", nombre: "be quiet! Pure Base 500DX", precio: 110, flujoAire: 76, rgb: 30 },
+
+    // --- GAMA ALTA / PECERAS Y RENDIMIENTO PREMIUM (85-100 flujo de aire) ---
+    { id: "cs16", nombre: "NZXT H9 Flow", precio: 160, flujoAire: 88, rgb: 0 },
+    { id: "cs17", nombre: "Lian Li O11 Dynamic EVO", precio: 170, flujoAire: 86, rgb: 20 },
+    { id: "cs18", nombre: "Corsair iCUE Link 3500X RGB", precio: 150, flujoAire: 85, rgb: 90 },
+    { id: "cs19", nombre: "Hyte Y60", precio: 200, flujoAire: 82, rgb: 0 },
+    { id: "cs20", nombre: "Phanteks NV5", precio: 130, flujoAire: 85, rgb: 50 },
+    { id: "cs21", nombre: "Fractal Design Torrent", precio: 190, flujoAire: 98, rgb: 0 },
+
+    // --- GAMA ENTUSIASTA / EXTREMOS (101+ flujo de aire) ---
+    { id: "cs22", nombre: "Asus ROG Strix Helios", precio: 280, flujoAire: 92, rgb: 85 },
+    { id: "cs23", nombre: "Corsair Obsidian 1000D", precio: 500, flujoAire: 105, rgb: 60 },
+    { id: "cs24", nombre: "Cooler Master HAF 700 EVO", precio: 550, flujoAire: 110, rgb: 100 }
+]
+
+        };
+
+        // --- SISTEMA P2P (MULTIJUGADOR REAL) ---
+        let peer = null;
+        let conexionP2P = null;
+        let soyHost = false;
+        
+        // Variables de estado del juego
+        let modoP2P = false;
+        let miNotaFinal = null;
+        let notaRivalFinal = null;
+        
+        let juegoActual = null;
+        let presupuestoActual = 0;
+        let seleccion = { cpu: null, gpu: null, ram: null, ssd: null, psu: null, cooler: null, case: null };
+
+        function abrirLobbyP2P() {
+            document.getElementById('pantalla-inicio').style.display = 'none';
+            document.getElementById('pantalla-lobby-p2p').style.display = 'flex';
+            
+            // Inicializar PeerJS (servidor público)
+            peer = new Peer();
+            
+            peer.on('open', (id) => {
+                document.getElementById('mi-id-p2p').innerText = id;
+            });
+
+            // Si alguien se conecta a MÍ (Yo soy Host)
+            peer.on('connection', (conn) => {
+                conexionP2P = conn;
+                soyHost = true;
+                configurarCanalP2P();
+                document.getElementById('estado-p2p').innerText = "✅ ¡Un jugador se ha conectado a tu sala!";
+                document.getElementById('botones-host').style.display = 'flex';
+            });
+        }
+
+        function conectarAmigo() {
+            let idAmigo = document.getElementById('input-amigo').value.trim();
+            if(!idAmigo) { alert("Pega el código de tu amigo."); return; }
+            
+            document.getElementById('estado-p2p').innerText = "Conectando...";
+            conexionP2P = peer.connect(idAmigo);
+            soyHost = false;
+            configurarCanalP2P();
+        }
+
+        function configurarCanalP2P() {
+            conexionP2P.on('open', () => {
+                if(!soyHost) {
+                    document.getElementById('estado-p2p').innerText = "✅ ¡Conectado con éxito! Esperando a que el Host inicie...";
+                }
+            });
+
+            // Escuchar mensajes del otro jugador
+            conexionP2P.on('data', (datos) => {
+                if(datos.tipo === 'START_GAME') {
+                    // El Host nos mandó los datos de la partida
+                    modoP2P = true;
+                    presupuestoActual = datos.presupuesto;
+                    juegoActual = juegosReales[datos.juegoIndex];
+                    prepararTienda("Desafío Red P2P");
+                }
+                else if (datos.tipo === 'EVALUACION') {
+                    // El rival terminó de ensamblar
+                    notaRivalFinal = datos.nota;
+                    verificarFinPartidaP2P();
+                }
+            });
+        }
+
+        function iniciarPartidaComoHost(dificultad) {
+            let presupuesto = 0;
+            if(dificultad === 'chatarra') {
+                presupuesto = Math.floor(Math.random() * (450 - 300 + 1) + 300);
+            } else {
+                presupuesto = Math.floor(Math.random() * (2000 - 600 + 1) + 600);
+            }
+            presupuesto = Math.ceil(presupuesto / 10) * 10;
+            
+            let juegoIdx = Math.floor(Math.random() * juegosReales.length);
+
+            // Avisar al cliente
+            conexionP2P.send({ tipo: 'START_GAME', presupuesto: presupuesto, juegoIndex: juegoIdx });
+
+            // Iniciar localmente
+            modoP2P = true;
+            presupuestoActual = presupuesto;
+            juegoActual = juegosReales[juegoIdx];
+            prepararTienda("Desafío Red P2P (Host)");
+        }
+
+        // --- SISTEMA DEL JUEGO SOLITARIO ---
+        function iniciarSolo() {
+            modoP2P = false;
+            juegoActual = juegosReales[Math.floor(Math.random() * juegosReales.length)];
+            const rand = Math.random();
+            if (rand < 0.60) {
+                presupuestoActual = Math.floor(Math.random() * (950 - 600 + 1) + 600);
+            } else if (rand < 0.85) {
+                presupuestoActual = Math.floor(Math.random() * (1500 - 951 + 1) + 951);
+            } else {
+                presupuestoActual = Math.floor(Math.random() * (2000 - 1501 + 1) + 1501);
+            }
+            presupuestoActual = Math.ceil(presupuestoActual / 50) * 50;
+            prepararTienda("Modo Solitario");
+        }
+
+        // --- CONFIG DE CATEGORÍAS ---
+        const categorias = [
+            { key: 'cpu',    titulo: '1. Procesadores (CPU)',          lista: () => componentes.cpu,    desc: c => `Rendimiento: ${c.rendimiento} | TDP: ${c.consumo}W` },
+            { key: 'gpu',    titulo: '2. Tarjetas Gráficas (GPU)',     lista: () => componentes.gpu,    desc: c => `Rendimiento: ${c.rendimiento} | TDP: ${c.consumo}W` },
+            { key: 'ram',    titulo: '3. Memoria RAM',                 lista: () => componentes.ram,    desc: c => `Rendimiento: ${c.rendimiento} | RGB: ${c.rgb}%` },
+            { key: 'ssd',    titulo: '4. Almacenamiento (SSD/HDD)',    lista: () => componentes.ssd,    desc: c => `Vel. Lectura: ${c.rendimiento}` },
+            { key: 'psu',    titulo: '5. Fuentes de Alimentación (PSU)', lista: () => componentes.psu, desc: c => `Potencia: ${c.watts}W | Ruido: ${c.ruido}dB` },
+            { key: 'cooler', titulo: '6. Refrigeración (Coolers)',     lista: () => componentes.cooler, desc: c => `Enfriamiento: ${c.enfriamiento} | Ruido: ${c.ruido}dB` },
+            { key: 'case',   titulo: '7. Gabinetes (Cases)',           lista: () => componentes.case,   desc: c => `Flujo Aire: ${c.flujoAire} | RGB: ${c.rgb}%` },
+        ];
+        let tabActiva = 'cpu';
+
+        function cambiarTab(key, btnEl) {
+            tabActiva = key;
+            document.querySelectorAll('.tab-cat').forEach(b => b.classList.remove('activa'));
+            btnEl.classList.add('activa');
+            const cat = categorias.find(c => c.key === key);
+            document.getElementById('panel-titulo').innerText = cat.titulo;
+            renderizarLista(cat);
+        }
+
+        function renderizarLista(cat) {
+            const contenedor = document.getElementById('lista-activa');
+            contenedor.innerHTML = '';
+            cat.lista().forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'tarjeta-pieza' + (seleccion[cat.key] && seleccion[cat.key].id === item.id ? ' seleccionada' : '');
+                div.innerHTML = `<strong style="color: #fff;">${item.nombre}</strong><span style="color: #00ffcc; font-weight:bold; font-size:1.1rem; display:block; margin-top:4px;">${item.precio}€</span><div class="detalles-pieza">${cat.desc(item)}</div>`;
+                div.onclick = () => {
+                    Array.from(contenedor.children).forEach(h => h.classList.remove('seleccionada'));
+                    div.classList.add('seleccionada');
+                    seleccion[cat.key] = item;
+                    actualizarHUD();
+                    // Marcar tab como completada
+                    document.querySelector(`.tab-cat[data-cat="${cat.key}"]`).classList.add('completada');
+                };
+                contenedor.appendChild(div);
+            });
+        }
+
+        // --- INICIALIZACIÓN COMÚN (TIENDA) ---
+        function prepararTienda(nombreBadge) {
+            document.getElementById('pantalla-inicio').style.display = 'none';
+            document.getElementById('pantalla-lobby-p2p').style.display = 'none';
+            document.getElementById('pantalla-juego').style.display = 'flex';
+            
+            document.getElementById('badge-modo').innerText = nombreBadge;
+            document.getElementById('juego-objetivo').innerText = juegoActual.nombre;
+            document.getElementById('presupuesto').innerText = `${presupuestoActual}€`;
+
+            // Resetear
+            miNotaFinal = null; notaRivalFinal = null;
+            document.getElementById('zona-resultado').style.display = "none";
+            document.getElementById('caja-espera-p2p').style.display = "none";
+            seleccion = { cpu: null, gpu: null, ram: null, ssd: null, psu: null, cooler: null, case: null };
+
+            // Resetear tabs
+            tabActiva = 'cpu';
+            document.querySelectorAll('.tab-cat').forEach(b => { b.classList.remove('activa', 'completada'); });
+            document.querySelector('.tab-cat[data-cat="cpu"]').classList.add('activa');
+            const catCpu = categorias.find(c => c.key === 'cpu');
+            document.getElementById('panel-titulo').innerText = catCpu.titulo;
+            renderizarLista(catCpu);
+            actualizarHUD();
+        }
+
+        function actualizarHUD() {
+            let gastado = 0; let req = 0; let disp = 0;
+            Object.keys(seleccion).forEach(k => { if (seleccion[k]) gastado += seleccion[k].precio; });
+            if (seleccion.cpu) req += seleccion.cpu.consumo;
+            if (seleccion.gpu) req += seleccion.gpu.consumo;
+            if (seleccion.ram) req += seleccion.ram.consumo;
+            if (seleccion.psu) disp = seleccion.psu.watts;
+
+            const gTxt = document.getElementById('gastado');
+            gTxt.innerText = `${gastado}€`; gTxt.style.color = gastado > presupuestoActual ? "red" : "#00ffcc";
+            const eTxt = document.getElementById('energia-hud');
+            eTxt.innerText = `${req}W / ${disp}W`; eTxt.style.color = req > disp ? "red" : "#fff";
+        }
+
+        // --- EVALUACIÓN Y CÁLCULOS ---
+        function evaluarEnsamble() {
+            if(miNotaFinal !== null) return; // Evitar spam de click
+            let faltan = Object.keys(seleccion).filter(k => !seleccion[k]);
+            if (faltan.length > 0) { alert("❌ Te faltan componentes."); return; }
+
+            let gastado = 0; Object.keys(seleccion).forEach(k => gastado += seleccion[k].precio);
+            let req = seleccion.cpu.consumo + seleccion.gpu.consumo + seleccion.ram.consumo;
+
+            let notaTemporal = 0;
+            let esErrorCritico = false;
+
+            // Verificar fallos críticos
+            if (gastado > presupuestoActual || req > seleccion.psu.watts) {
+                notaTemporal = 1; // Bancarrota o explosión
+                esErrorCritico = true;
+            } else {
+                // Cálculo de Rendimiento Real
+                let balTemp = (seleccion.cooler.enfriamiento + seleccion.case.flujoAire) - (seleccion.cpu.consumo * 0.4);
+                let penFps = balTemp < 30 ? 0.6 : (balTemp < 65 ? 0.85 : 1.0);
+                let ptsTemp = balTemp < 30 ? 4 : (balTemp < 65 ? 14 : 25);
+                
+                let totRuido = seleccion.cooler.ruido + seleccion.psu.ruido;
+                let ptsRuido = totRuido > 90 ? 5 : (totRuido > 60 ? 15 : 25);
+                
+                let totRgb = (seleccion.ram.rgb + seleccion.cooler.rgb + seleccion.case.rgb) / 3;
+                let ptsEstetica = totRgb > 75 ? 25 : (totRgb > 40 ? 18 : 10);
+                
+                let factor = (seleccion.gpu.rendimiento * juegoActual.gpuPeso) + (seleccion.cpu.rendimiento * juegoActual.cpuPeso) + (seleccion.ram.rendimiento * juegoActual.ramPeso);
+                let penDisco = seleccion.ssd.id.includes("HDD") ? 0.7 : 1.0;
+                let fps = Math.round(factor * (juegoActual.fpsBase / 60) * penFps * penDisco);
+                let ptsRend = Math.min(25, Math.round((fps / Math.max(juegoActual.fpsBase, 60)) * 25));
+
+                notaTemporal = ptsRend + ptsTemp + ptsRuido + ptsEstetica;
+                if (seleccion.ssd.id.includes("HDD")) notaTemporal -= 15;
+                notaTemporal = Math.max(1, Math.min(100, notaTemporal));
+
+                // Llenar UI Gráfica Local
+                document.getElementById('nota-fps').innerText = `${fps} FPS`;
+                document.getElementById('nota-temp').innerText = balTemp < 30 ? "Throttling 🔥" : (balTemp < 65 ? "Caliente ⚠️" : "Fría 🥶");
+                document.getElementById('nota-ruido').innerText = totRuido > 90 ? "Turbina ✈️" : (totRuido > 60 ? "Zumbido 🔊" : "Inaudible 🤫");
+                document.getElementById('nota-rgb').innerText = totRgb > 75 ? "Full RGB 🌈" : (totRgb > 40 ? "Toques RGB ✨" : "Stealth");
+            }
+
+            miNotaFinal = notaTemporal;
+            document.getElementById('analisis-resultado').innerHTML = esErrorCritico ? "<span style='color:red;'>Error Crítico: Excediste presupuesto o energía. PC inservible.</span>" : `Inversión: <strong>${gastado}€</strong> / ${presupuestoActual}€.`;
+
+            if(modoP2P) {
+                // Modo RED: Enviar nota al amigo y esperar
+                conexionP2P.send({ tipo: 'EVALUACION', nota: miNotaFinal });
+                verificarFinPartidaP2P();
+            } else {
+                // Modo Solitario: Mostrar resultado inmediatamente
+                mostrarResultadoFinal(false);
+            }
+        }
+
+        function verificarFinPartidaP2P() {
+            if(miNotaFinal === null) {
+                // Yo no he terminado, pero mi amigo sí
+                return; 
+            }
+            if(notaRivalFinal === null) {
+                // Yo terminé, pero mi amigo no
+                document.getElementById('caja-espera-p2p').style.display = 'block';
+                return;
+            }
+            // AMBOS HAN TERMINADO
+            document.getElementById('caja-espera-p2p').style.display = 'none';
+            mostrarResultadoFinal(true);
+        }
+
+        function mostrarResultadoFinal(esP2P) {
+            const zonaRes = document.getElementById('zona-resultado');
+            zonaRes.style.display = "block";
+            
+            if(!esP2P) {
+                document.getElementById('zona-vs').style.display = 'none';
+                document.getElementById('caja-puntuacion-normal').style.display = 'block';
+                document.getElementById('global-score').innerText = `${miNotaFinal} / 100`;
+                let rTxt = "MAL ENSAMBLE"; if(miNotaFinal >= 90) rTxt = "MASTER RACE"; else if(miNotaFinal >= 75) rTxt = "MUY BUENA";
+                document.getElementById('rango-texto').innerText = rTxt;
+                guardarPartida();
+            } else {
+                document.getElementById('caja-puntuacion-normal').style.display = 'none';
+                document.getElementById('zona-vs').style.display = 'block';
+                document.getElementById('vs-tu-nota').innerText = miNotaFinal;
+                document.getElementById('vs-rival-nota').innerText = notaRivalFinal;
+                guardarPartida();
+                let h2Res = document.getElementById('resultado-combate');
+                if (miNotaFinal > notaRivalFinal) {
+                    h2Res.innerText = "¡VICTORIA ÉPICA!"; h2Res.style.color = "#00ffcc";
+                } else if (miNotaFinal === notaRivalFinal) {
+                    h2Res.innerText = "¡EMPATE ABSOLUTO!"; h2Res.style.color = "#f59e0b";
+                } else {
+                    h2Res.innerText = "¡DERROTA! Tu amigo armó algo mejor."; h2Res.style.color = "#ff3b30";
+                }
+            }
+            zonaRes.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // --- USERNAME & HISTORIAL ---
+        let username = '';
+
+        function confirmarUsername() {
+            const val = document.getElementById('input-username').value.trim();
+            if (!val) { document.getElementById('input-username').style.borderColor = 'var(--danger-color)'; return; }
+            username = val;
+            localStorage.setItem('pcbuilder_username', username);
+            document.getElementById('pantalla-username').style.display = 'none';
+            document.getElementById('pantalla-inicio').style.display = 'grid';
+            renderizarSidebars();
+        }
+
+        function volverAlMenu() {
+            document.getElementById('pantalla-juego').style.display = 'none';
+            document.getElementById('pantalla-inicio').style.display = 'grid';
+            renderizarSidebars();
+        }
+
+        function getHistorial() {
+            try { return JSON.parse(localStorage.getItem('pcbuilder_historial_' + username) || '[]'); } catch(e) { return []; }
+        }
+
+        function guardarPartida() {
+            if (!username) return;
+            const ahora = new Date();
+            const fecha = ahora.toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit', year:'2-digit' }) + ' ' + ahora.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
+            const gastado = Object.keys(seleccion).reduce((a, k) => a + (seleccion[k] ? seleccion[k].precio : 0), 0);
+            const notasFps = document.getElementById('nota-fps').innerText;
+            const notasTemp = document.getElementById('nota-temp').innerText;
+            const notasRuido = document.getElementById('nota-ruido').innerText;
+            const notasRgb = document.getElementById('nota-rgb').innerText;
+            const partida = {
+                id: Date.now(),
+                fecha,
+                juego: juegoActual.nombre,
+                presupuesto: presupuestoActual,
+                gastado,
+                nota: miNotaFinal,
+                seleccion: {
+                    cpu: seleccion.cpu ? { nombre: seleccion.cpu.nombre, precio: seleccion.cpu.precio } : null,
+                    gpu: seleccion.gpu ? { nombre: seleccion.gpu.nombre, precio: seleccion.gpu.precio } : null,
+                    ram: seleccion.ram ? { nombre: seleccion.ram.nombre, precio: seleccion.ram.precio } : null,
+                    ssd: seleccion.ssd ? { nombre: seleccion.ssd.nombre, precio: seleccion.ssd.precio } : null,
+                    psu: seleccion.psu ? { nombre: seleccion.psu.nombre, precio: seleccion.psu.precio } : null,
+                    cooler: seleccion.cooler ? { nombre: seleccion.cooler.nombre, precio: seleccion.cooler.precio } : null,
+                    case: seleccion.case ? { nombre: seleccion.case.nombre, precio: seleccion.case.precio } : null,
+                },
+                notas: { fps: notasFps, temp: notasTemp, ruido: notasRuido, rgb: notasRgb }
+            };
+            const historial = getHistorial();
+            historial.unshift(partida);
+            if (historial.length > 50) historial.pop();
+            localStorage.setItem('pcbuilder_historial_' + username, JSON.stringify(historial));
+            renderizarSidebars();
+        }
+
+        function renderizarSidebars() {
+            const historial = getHistorial();
+            // Username display
+            document.getElementById('sidebar-username').innerText = '👤 ' + username;
+
+            // Historial
+            const lista = document.getElementById('historial-lista');
+            if (historial.length === 0) {
+                lista.innerHTML = '<div class="historial-vacio">Aún no has jugado ninguna partida.</div>';
+            } else {
+                lista.innerHTML = historial.map(p => `
+                    <div class="historial-item" onclick="abrirModalPartida(${p.id})">
+                        <div class="hi-juego">${p.juego}</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:3px;">
+                            <span class="hi-score">${p.nota}/100</span>
+                            <span class="hi-presup">${p.gastado}€ / ${p.presupuesto}€</span>
+                        </div>
+                        <div class="hi-fecha">${p.fecha}</div>
+                    </div>`).join('');
+            }
+
+            // Mejor partida
+            const mejor = historial.length ? historial.reduce((a, b) => a.nota >= b.nota ? a : b) : null;
+            const box = document.getElementById('mejor-partida-box');
+            if (!mejor) {
+                box.innerHTML = '<div class="mejor-vacio">Aún no tienes partidas guardadas.</div>';
+            } else {
+                const labels = { cpu: 'CPU', gpu: 'GPU', ram: 'RAM', ssd: 'Almacenamiento', psu: 'PSU', cooler: 'Cooler', case: 'Gabinete' };
+                const comps = Object.keys(labels).map(k => mejor.seleccion[k] ? `<div class="mejor-comp-item"><span>${labels[k]}:</span> ${mejor.seleccion[k].nombre} <span style="color:#64748b;">(${mejor.seleccion[k].precio}€)</span></div>` : '').join('');
+                box.innerHTML = `
+                    <div class="mejor-score-num">${mejor.nota}/100</div>
+                    <div class="mejor-juego">${mejor.juego}</div>
+                    <div style="color:#64748b; font-size:0.8rem; margin-bottom:8px;">${mejor.fecha} · ${mejor.gastado}€ gastados</div>
+                    <div class="mejor-comp">${comps}</div>`;
+            }
+        }
+
+        function abrirModalPartida(id) {
+            const historial = getHistorial();
+            const p = historial.find(x => x.id === id);
+            if (!p) return;
+            document.getElementById('modal-juego-nombre').innerText = p.juego;
+            document.getElementById('modal-sub').innerText = `${p.fecha}  ·  Presupuesto: ${p.presupuesto}€  ·  Gastado: ${p.gastado}€`;
+            document.getElementById('modal-score').innerText = `${p.nota} / 100`;
+            const labels = { cpu: 'CPU', gpu: 'GPU', ram: 'RAM', ssd: 'Almacenamiento', psu: 'PSU', cooler: 'Cooler', case: 'Gabinete' };
+            document.getElementById('modal-comp-grid').innerHTML = Object.keys(labels).map(k => p.seleccion[k] ? `
+                <div class="modal-comp-card">
+                    <div class="mcc-label">${labels[k]}</div>
+                    <div class="mcc-nombre">${p.seleccion[k].nombre}</div>
+                    <div class="mcc-precio">${p.seleccion[k].precio}€</div>
+                </div>` : '').join('');
+            if (p.notas) {
+                document.getElementById('modal-notas-grid').innerHTML = `
+                    <div class="modal-nota-item"><div>Rendimiento</div><div class="mn-val">${p.notas.fps}</div></div>
+                    <div class="modal-nota-item"><div>Temperatura</div><div class="mn-val">${p.notas.temp}</div></div>
+                    <div class="modal-nota-item"><div>Acústica</div><div class="mn-val">${p.notas.ruido}</div></div>
+                    <div class="modal-nota-item"><div>Estética</div><div class="mn-val">${p.notas.rgb}</div></div>`;
+            }
+            document.getElementById('modal-partida').style.display = 'flex';
+        }
+
+        function cerrarModal() {
+            document.getElementById('modal-partida').style.display = 'none';
+        }
+
+        // Cerrar modal al clicar fuera
+        document.getElementById('modal-partida').addEventListener('click', function(e) {
+            if (e.target === this) cerrarModal();
+        });
+
+        // Al cargar, si hay username guardado saltar la pantalla
+        (function init() {
+            const saved = localStorage.getItem('pcbuilder_username');
+            if (saved) {
+                username = saved;
+                document.getElementById('pantalla-username').style.display = 'none';
+                document.getElementById('pantalla-inicio').style.display = 'grid';
+                renderizarSidebars();
+            }
+        })();
+    </script>
+</body>
+</html>
